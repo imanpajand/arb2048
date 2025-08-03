@@ -4,10 +4,56 @@ const ABI = [
   "event GM(string name, uint256 score, address player, uint256 timestamp)"
 ];
 
+// --- NEW: Arbitrum Network Details ---
+const ARBITRUM_CHAIN_ID = "0xa4b1"; // 42161 in hex
+const arbitrumNetworkDetails = {
+  chainId: ARBITRUM_CHAIN_ID,
+  chainName: "Arbitrum One",
+  nativeCurrency: {
+    name: "Ethereum",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+  blockExplorerUrls: ["https://arbiscan.io"],
+};
+
 let provider, signer, contract;
 let currentScore = 0;
 let gameOver = false;
 let tileExistsPreviously = Array.from({ length: 4 }, () => Array(4).fill(false));
+
+// --- NEW: Function to Switch or Add Arbitrum Network ---
+async function switchOrAddArbitrumNetwork() {
+  if (!window.ethereum) {
+    console.error("No ethereum provider found");
+    return;
+  }
+  try {
+    console.log("Switching to Arbitrum network...");
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ARBITRUM_CHAIN_ID }],
+    });
+    console.log("✅ Switched to Arbitrum");
+  } catch (switchError) {
+    // This error code indicates that the chain has not been added to MetaMask.
+    if (switchError.code === 4902) {
+      console.log("Arbitrum network not found, adding it...");
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [arbitrumNetworkDetails],
+        });
+        console.log("✅ Added and switched to Arbitrum");
+      } catch (addError) {
+        console.error("❌ Failed to add Arbitrum network:", addError);
+      }
+    } else {
+      console.error("❌ Failed to switch network:", switchError);
+    }
+  }
+}
 
 window.onload = async () => {
   initGame();
@@ -28,6 +74,14 @@ window.onload = async () => {
   try {
     if (window.sdk?.wallet?.getEthereumProvider) {
       const eth = await window.sdk.wallet.getEthereumProvider();
+      
+      // --- MODIFIED: Use window.ethereum for network switching ---
+      // We still use the Farcaster SDK provider for transactions, 
+      // but the standard window.ethereum is needed for network switching requests.
+      if (window.ethereum) {
+          await switchOrAddArbitrumNetwork();
+      }
+
       provider = new ethers.BrowserProvider(eth);
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
@@ -43,6 +97,15 @@ window.onload = async () => {
 async function sendGM() {
   if (!contract) return alert("اول کیف پول رو وصل کن");
   try {
+    // --- ADDED: Ensure correct network before transaction ---
+    await switchOrAddArbitrumNetwork();
+    
+    // Re-initialize signer and contract in case the network switch requires it
+    const eth = await window.sdk.wallet.getEthereumProvider();
+    provider = new ethers.BrowserProvider(eth);
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
     const tx = await contract.gm("Gm to Iman", 0, { gasLimit: 100000 });
     await tx.wait();
     alert("✅GM به خودت عزیزم");
@@ -62,6 +125,15 @@ async function submitScore(e) {
   const name = document.getElementById("playerName").value.trim();
   if (!name) return alert("نام بازیکن وارد کن");
   try {
+    // --- ADDED: Ensure correct network before transaction ---
+    await switchOrAddArbitrumNetwork();
+
+    // Re-initialize signer and contract in case the network switch requires it
+    const eth = await window.sdk.wallet.getEthereumProvider();
+    provider = new ethers.BrowserProvider(eth);
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
     const tx = await contract.gm(name, currentScore, { gasLimit: 100000 });
     await tx.wait();
     alert("🎯 امتیازت ثبت شد خوشگله!");
@@ -76,6 +148,10 @@ async function submitScore(e) {
     resetGame();
   }
 }
+
+// ... The rest of the code remains unchanged ...
+// (loadLeaderboard, toggleLeaderboard, updateScoreDisplay, and all Game Logic functions)
+
 
 async function loadLeaderboard() {
   if (!provider) return;
@@ -120,10 +196,6 @@ function updateScoreDisplay() {
     scoreEl.innerText = `Score: ${currentScore}`;
   }
 }
-
-// --- Game Logic (unchanged) ---
-// [Same as before: initGame, resetGame, setupControls, move, etc.]
-
 
 // ----------------- GAME LOGIC ------------------
 let grid = [];
@@ -277,4 +349,3 @@ function canMove() {
   }
   return false;
 }
-
