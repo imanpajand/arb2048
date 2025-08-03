@@ -31,7 +31,7 @@
     "heroImageUrl": "https://arb2048.vercel.app/assets/favicon.jpg",
     "ogImageUrl": "https://arb2048.vercel.app/assets/favicon.jpg",
     "ogDescription": "Play 2048 on Arbitrum, save your score on-chain on top the leaderboard!",
-    "castShareUrl": "https://purple2048.vercel.app/api/share",
+    "castShareUrl": "https://arb2048.vercel.app/api/share",
     "addToHomeScreenAction": {
       "type": "post_redirect",
       "name": "افزودن به Mini Apps",
