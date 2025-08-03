@@ -11,7 +11,7 @@
     "homeUrl": "https://arb2048.vercel.app",
     "imageUrl": "https://arb2048.vercel.app/assets/favicon.jpg",
     "splashImageUrl": "https://arb2048.vercel.app/assets/favicon.jpg",
-    "splashBackgroundColor": "#11AAFE",
+    "splashBackgroundColor": "#46DFFF",
     "subtitle": "Arbitrum 2048 game",
     "description": "Arbitrum 2048 game by ImanPJN",
     "primaryCategory": "games",
